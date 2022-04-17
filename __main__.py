@@ -34,6 +34,8 @@ class HeeKyung(commands.AutoShardedBot):
             if file.endswith(".py"):
                 self.load_extension(f"cogs.{file[:-3]}")
                 self.logger.info(f"Loaded {file}")
+        self.load_extension("jishaku")
+        self.logger.info("Loaded jishaku")
 
 
 if __name__ == "__main__":
