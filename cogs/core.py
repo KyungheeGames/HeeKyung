@@ -70,11 +70,15 @@ class Core(commands.Cog):
             ),
         ).set_footer(text="아래 버튼을 눌러 회의록을 다운로드하세요. (60초)")
         msg: Message = await ctx.reply(embed=embed)
-        for emoji in numberEmojis[:len(meetings)]:
+        for emoji in numberEmojis[: len(meetings)]:
             await msg.add_reaction(emoji)
         try:
-            react = await self.bot.wait_for("reaction_add", check=lambda reaction, user: user == ctx.author and str(
-                reaction.emoji) in numberEmojis, timeout=60)
+            react = await self.bot.wait_for(
+                "reaction_add",
+                check=lambda reaction, user: user == ctx.author
+                and str(reaction.emoji) in numberEmojis,
+                timeout=60,
+            )
         except TimeoutError:
             return await msg.clear_reactions()
         await msg.delete()
