@@ -14,7 +14,7 @@ class Listener(commands.Cog):
             return
         if isinstance(error, commands.CheckFailure):
             if str(ctx.command) == "회의":
-                return await ctx.reply('해당 명령어는 KyungheeGames 개발자들만 사용할 수 있습니다.')
+                return await ctx.reply("해당 명령어는 KyungheeGames 개발자들만 사용할 수 있습니다.")
         self.bot.logger.error(error)
 
     @commands.Cog.listener()

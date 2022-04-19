@@ -13,7 +13,7 @@ from aiohttp import ClientSession
 
 
 def isGameDeveloper():
-    with open('./database/managers.json', 'r', encoding='utf8') as f:
+    with open("./database/managers.json", "r", encoding="utf8") as f:
         managers = json.load(f)
     return commands.check(lambda ctx: managers.get(str(ctx.author.id)))
 
@@ -46,9 +46,9 @@ class Core(commands.Cog):
         self.meetings["meetingWhether"] = False
         self.meetings["channel"] = int()
         with open(
-                f'./database/meetings/{datetime.now(tz=pytz.timezone("Asia/Seoul")).strftime("%Y%m%d%H%M")}.txt',
-                "w",
-                encoding="utf8",
+            f'./database/meetings/{datetime.now(tz=pytz.timezone("Asia/Seoul")).strftime("%Y%m%d%H%M")}.txt',
+            "w",
+            encoding="utf8",
         ) as meeting:
             meeting.write("\n".join(self.meetings["messages"]))
         self.meetings["messages"] = []
@@ -86,7 +86,7 @@ class Core(commands.Cog):
             react = await self.bot.wait_for(
                 "reaction_add",
                 check=lambda reaction, user: user == ctx.author
-                                             and str(reaction.emoji) in numberEmojis,
+                and str(reaction.emoji) in numberEmojis,
                 timeout=60,
             )
         except TimeoutError:
