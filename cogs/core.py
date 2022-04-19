@@ -1,6 +1,6 @@
 from discord.ext import commands
+from discord import Message, Member, Embed, File
 from discord.ext.commands.context import Context
-from discord import Message, Member, Embed, File, Reaction
 
 from __main__ import HeeKyung
 
@@ -12,12 +12,19 @@ from asyncio import TimeoutError
 from aiohttp import ClientSession
 
 
+def isGameDeveloper():
+    with open('./database/managers.json', 'r', encoding='utf8') as f:
+        managers = json.load(f)
+    return commands.check(lambda ctx: managers.get(str(ctx.author.id)))
+
+
 class Core(commands.Cog):
     def __init__(self, bot: HeeKyung):
         self.bot = bot
         self.meetings = {"meetingWhether": False, "channel": int(), "messages": []}
 
     @commands.group(name="회의")
+    @isGameDeveloper()
     async def meeting(self, ctx: Context):
         if ctx.invoked_subcommand is None:
             return
@@ -39,9 +46,9 @@ class Core(commands.Cog):
         self.meetings["meetingWhether"] = False
         self.meetings["channel"] = int()
         with open(
-            f'./database/meetings/{datetime.now(tz=pytz.timezone("Asia/Seoul")).strftime("%Y%m%d%H%M")}.txt',
-            "w",
-            encoding="utf8",
+                f'./database/meetings/{datetime.now(tz=pytz.timezone("Asia/Seoul")).strftime("%Y%m%d%H%M")}.txt',
+                "w",
+                encoding="utf8",
         ) as meeting:
             meeting.write("\n".join(self.meetings["messages"]))
         self.meetings["messages"] = []
@@ -79,7 +86,7 @@ class Core(commands.Cog):
             react = await self.bot.wait_for(
                 "reaction_add",
                 check=lambda reaction, user: user == ctx.author
-                and str(reaction.emoji) in numberEmojis,
+                                             and str(reaction.emoji) in numberEmojis,
                 timeout=60,
             )
         except TimeoutError:
@@ -168,32 +175,15 @@ class Core(commands.Cog):
         async with ClientSession() as session:
             async with session.get("http://localhost:8000/api/scripts") as resp:
                 response = await resp.json()
-        count = response['count']
+        count = response["count"]
         await ctx.reply(
             embed=Embed(
                 title=f"대본 [ {count} 개 ]",
-                description="\n".join(list(map(lambda x: x['name'], response['scripts'])))
+                description="\n".join(
+                    list(map(lambda x: x["name"], response["scripts"]))
+                ),
             )
         )
-
-    @commands.group(name="내전")
-    async def scream(self, ctx: Context):
-        if ctx.invoked_subcommand is None:
-            return
-
-    @scream.command(name="시작")
-    async def screamStart(self, ctx: Context):
-        teams = ["🔵", "🔴"]
-        msg: Message = await ctx.send(embed=Embed(title="내전 시작", description=f'{teams[0]} 블루팀\n\n{teams[1]} 레드팀').set_footer(text="60초 안에 "))
-        for _ in teams:
-            await msg.add_reaction(_)
-        while True:
-            try:
-                reaction = await self.bot.wait_for("reaction_add", timeout=60, check=lambda x: x.channel == ctx.channel and x.)
-            except TimeoutError:
-                break
-            else:
-                reaction
 
 
 def setup(bot: HeeKyung):

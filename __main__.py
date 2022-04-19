@@ -27,9 +27,6 @@ class HeeKyung(commands.AutoShardedBot):
         )
         self.logger.addHandler(fileHandler)
         self.logger.addHandler(streamHandler)
-
-    async def on_ready(self):
-        self.logger.info(f"Logged in as {self.user}")
         for file in os.listdir("./cogs"):
             if file.endswith(".py"):
                 self.load_extension(f"cogs.{file[:-3]}")
