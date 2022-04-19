@@ -1,6 +1,6 @@
 from discord.ext import commands
-from discord import Message, Member, Embed, File
 from discord.ext.commands.context import Context
+from discord import Message, Member, Embed, File, Reaction
 
 from __main__ import HeeKyung
 
@@ -9,6 +9,7 @@ import json
 import pytz
 from datetime import datetime
 from asyncio import TimeoutError
+from aiohttp import ClientSession
 
 
 class Core(commands.Cog):
@@ -22,6 +23,7 @@ class Core(commands.Cog):
             return
 
     @meeting.command(name="시작")
+    @commands.guild_only()
     async def meetingStart(self, ctx: Context):
         if self.meetings["meetingWhether"]:
             return await ctx.reply("회의가 이미 진행중입니다.")
@@ -30,6 +32,7 @@ class Core(commands.Cog):
         return await ctx.reply("회의가 시작되었습니다.")
 
     @meeting.command(name="종료")
+    @commands.guild_only()
     async def meetingEnd(self, ctx: Context):
         if not self.meetings["meetingWhether"]:
             return await ctx.reply("회의가 진행중이 아닙니다.")
@@ -159,6 +162,38 @@ class Core(commands.Cog):
                 ),
             )
         )
+
+    @commands.group(name="대본")
+    async def script(self, ctx: Context):
+        async with ClientSession() as session:
+            async with session.get("http://localhost:8000/api/scripts") as resp:
+                response = await resp.json()
+        count = response['count']
+        await ctx.reply(
+            embed=Embed(
+                title=f"대본 [ {count} 개 ]",
+                description="\n".join(list(map(lambda x: x['name'], response['scripts'])))
+            )
+        )
+
+    @commands.group(name="내전")
+    async def scream(self, ctx: Context):
+        if ctx.invoked_subcommand is None:
+            return
+
+    @scream.command(name="시작")
+    async def screamStart(self, ctx: Context):
+        teams = ["🔵", "🔴"]
+        msg: Message = await ctx.send(embed=Embed(title="내전 시작", description=f'{teams[0]} 블루팀\n\n{teams[1]} 레드팀').set_footer(text="60초 안에 "))
+        for _ in teams:
+            await msg.add_reaction(_)
+        while True:
+            try:
+                reaction = await self.bot.wait_for("reaction_add", timeout=60, check=lambda x: x.channel == ctx.channel and x.)
+            except TimeoutError:
+                break
+            else:
+                reaction
 
 
 def setup(bot: HeeKyung):
