@@ -1,3 +1,4 @@
+import aiohttp
 from discord.ext import commands
 from discord import Message, Member, Embed, File
 from discord.ext.commands.context import Context
@@ -55,6 +56,7 @@ class Core(commands.Cog):
         return await ctx.reply("회의가 종료되었습니다.")
 
     @commands.command(name="회의록")
+    @isGameDeveloper()
     async def exportMeeting(self, ctx: Context):
         meetings = sorted(os.listdir("./database/meetings"), reverse=True)
         if len(meetings) == 0:
@@ -170,20 +172,46 @@ class Core(commands.Cog):
             )
         )
 
-    @commands.group(name="대본")
-    async def script(self, ctx: Context):
+    @commands.command(name="대본")
+    async def script(self, ctx: Context, _id: int):
         async with ClientSession() as session:
-            async with session.get("http://localhost:8000/api/scripts") as resp:
+            async with session.get(f"http://localhost:8000/api/script/{_id}") as resp:
                 response = await resp.json()
-        count = response["count"]
-        await ctx.reply(
-            embed=Embed(
-                title=f"대본 [ {count} 개 ]",
-                description="\n".join(
-                    list(map(lambda x: x["name"], response["scripts"]))
-                ),
-            )
-        )
+        koreanScripts = "\n".join(response['korean'])
+        englishScripts = "\n".join(response['english'])
+        msg: Message = await ctx.reply(embed=Embed(title=response['name'], description=f'**한국어**\n```{koreanScripts}```\n**영어**\n```{englishScripts}```'))
+        await msg.add_reaction("📝")
+        try:
+            await self.bot.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and str(reaction.emoji) == "📝", timeout=60)
+        except TimeoutError:
+            await msg.clear_reactions()
+        else:
+            await msg.clear_reactions()
+            msg1: Message = await ctx.send("대본 txt 파일을 보내주세요!")
+            try:
+                res: Message = await self.bot.wait_for("message", check=lambda message: ctx.author == message.author and message.channel == ctx.channel, timeout=60)
+            except TimeoutError:
+                await msg1.delete()
+            else:
+                if len(res.attachments) == 0:
+                    return await ctx.send("보내주신 메시지엔 파일이 없는거 같아요 ㅠ")
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(res.attachments[0].url) as resp:
+                        response = await resp.read()
+                fileRead = response.decode("utf8")
+                if len(fileRead.splitlines()) % 2 != 0:
+                    return await ctx.send("한국어, 영어 버전의 대본을 보내주셔야하는데 정확하지 않은거 같아요 ㅠ")
+                twoLines = fileRead.splitlines()[_ * 2:_ * 2 + 2]
+                for _ in range(len(fileRead.splitlines()) // 2):
+                    twoLines.append()
+                koreanScripts = [x[0] for x in twoLines]
+                englishScripts = [y[1] for y in twoLines]
+                response['korean'] = koreanScripts
+                response['english'] = englishScripts
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(f"http://localhost:8000/api/script/{_id}", json=response) as resp:
+                        await resp.read()
+                
 
 
 def setup(bot: HeeKyung):
