@@ -1,4 +1,3 @@
-import aiohttp
 from discord.ext import commands
 from discord import Message, Member, Embed, File
 from discord.ext.commands.context import Context
@@ -9,6 +8,7 @@ import os
 import json
 import pytz
 from datetime import datetime
+from pydub import AudioSegment
 from asyncio import TimeoutError
 from aiohttp import ClientSession
 
@@ -117,6 +117,7 @@ class Core(commands.Cog):
                 )
 
     @commands.group(name="관리자")
+    @isGameDeveloper()
     async def admin(self, ctx: Context):
         if ctx.invoked_subcommand is None:
             return
@@ -172,46 +173,34 @@ class Core(commands.Cog):
             )
         )
 
-    @commands.command(name="대본")
-    async def script(self, ctx: Context, _id: int):
-        async with ClientSession() as session:
-            async with session.get(f"http://localhost:8000/api/script/{_id}") as resp:
-                response = await resp.json()
-        koreanScripts = "\n".join(response['korean'])
-        englishScripts = "\n".join(response['english'])
-        msg: Message = await ctx.reply(embed=Embed(title=response['name'], description=f'**한국어**\n```{koreanScripts}```\n**영어**\n```{englishScripts}```'))
-        await msg.add_reaction("📝")
-        try:
-            await self.bot.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and str(reaction.emoji) == "📝", timeout=60)
-        except TimeoutError:
-            await msg.clear_reactions()
-        else:
-            await msg.clear_reactions()
-            msg1: Message = await ctx.send("대본 txt 파일을 보내주세요!")
-            try:
-                res: Message = await self.bot.wait_for("message", check=lambda message: ctx.author == message.author and message.channel == ctx.channel, timeout=60)
-            except TimeoutError:
-                await msg1.delete()
-            else:
-                if len(res.attachments) == 0:
-                    return await ctx.send("보내주신 메시지엔 파일이 없는거 같아요 ㅠ")
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(res.attachments[0].url) as resp:
-                        response = await resp.read()
-                fileRead = response.decode("utf8")
-                if len(fileRead.splitlines()) % 2 != 0:
-                    return await ctx.send("한국어, 영어 버전의 대본을 보내주셔야하는데 정확하지 않은거 같아요 ㅠ")
-                twoLines = fileRead.splitlines()[_ * 2:_ * 2 + 2]
-                for _ in range(len(fileRead.splitlines()) // 2):
-                    twoLines.append()
-                koreanScripts = [x[0] for x in twoLines]
-                englishScripts = [y[1] for y in twoLines]
-                response['korean'] = koreanScripts
-                response['english'] = englishScripts
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(f"http://localhost:8000/api/script/{_id}", json=response) as resp:
-                        await resp.read()
-                
+    @commands.command(name="오디오변환")
+    @isGameDeveloper()
+    async def audioConvert(self, ctx: Context):
+        if len(ctx.message.attachments) == 0:
+            return await ctx.reply("첨부된 파일이 없습니다.")
+        if ctx.message.attachments[0].filename.split(".")[-1] not in ["mp3", "wav"]:
+            return await ctx.reply("오디오 파일이 아닙니다.")
+        with open(
+            f"./database/audioDatas/input/{ctx.message.attachments[0].filename}", "wb"
+        ) as fp:
+            await ctx.message.attachments[0].save(fp)
+        songFile = AudioSegment.from_mp3(
+            f"./database/audioDatas/input/{ctx.message.attachments[0].filename}"
+        )
+        songFile.export(
+            f'./database/audioDatas/output/{ctx.message.attachments[0].filename.split(".")[0]}.ogg',
+            format="ogg",
+        )
+        await ctx.reply(
+            f"{ctx.message.attachments[0].filename} 파일이 오디오로 변환되었습니다.",
+            file=File(
+                f'./database/audioDatas/output/{ctx.message.attachments[0].filename.split(".")[0]}.ogg'
+            ),
+        )
+        os.remove(f"./database/audioDatas/input/{ctx.message.attachments[0].filename}")
+        os.remove(
+            f'./database/audioDatas/output/{ctx.message.attachments[0].filename.split(".")[0]}.ogg'
+        )
 
 
 def setup(bot: HeeKyung):
