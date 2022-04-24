@@ -2,5 +2,5 @@ discord
 python-dotenv
 jishaku
 pytz
-aiohttp
 pydub
+EZPaginator

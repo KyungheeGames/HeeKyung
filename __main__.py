@@ -11,7 +11,10 @@ load_dotenv(verbose=True)
 class HeeKyung(commands.AutoShardedBot):
     def __init__(self):
         super().__init__(
-            command_prefix="!", description="HeeKyung", intents=Intents.all()
+            command_prefix=commands.when_mentioned_or(os.getenv("PREFIX")),
+            description="HeeKyung",
+            intents=Intents.all(),
+            help_command=None,
         )
         self.logger = logging.getLogger("discord")
         self.logger.setLevel(logging.INFO)

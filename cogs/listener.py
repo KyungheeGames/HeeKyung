@@ -1,3 +1,4 @@
+from discord import Game, Status
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
@@ -20,6 +21,7 @@ class Listener(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.bot.logger.info(f"Logged in as {self.bot.user}")
+        await self.bot.change_presence(activity=Game(name="!help"), status=Status.online)
 
 
 def setup(bot: HeeKyung):

@@ -7,10 +7,11 @@ from __main__ import HeeKyung
 import os
 import json
 import pytz
+from typing import List
 from datetime import datetime
 from pydub import AudioSegment
 from asyncio import TimeoutError
-from aiohttp import ClientSession
+from EZPaginator import Paginator
 
 
 def isGameDeveloper():
@@ -23,6 +24,57 @@ class Core(commands.Cog):
     def __init__(self, bot: HeeKyung):
         self.bot = bot
         self.meetings = {"meetingWhether": False, "channel": int(), "messages": []}
+
+    @commands.command(name="도움말", aliases=["도움", "help"])
+    async def help(self, ctx: Context):
+        embeds: List[Embed] = list(map(lambda x: x.set_footer(icon_url=ctx.author.avatar_url), [
+            Embed(
+                title="희경 도움말",
+                description="**Page 1.** ILove103\n**Page 2.** KyungheeGames 개발자 도움말"
+            ),
+            Embed(
+                title="ILove103 도움말",
+                description="1학년 3반을 위한 커맨드입니다."
+            ).add_field(
+                name="!내전 시작",
+                value="롤 5 vs 5 내전을 시작합니다.",
+                inline=False,
+            ).add_field(
+                name="!내전 종료",
+                value="롤 5 vs 5 내전을 종료합니다.",
+                inline=False,
+            ),
+            Embed(
+                title="KyungheeGames 개발자 도움말",
+                description="게임 개발자만 사용할 수 있습니다."
+            ).add_field(
+                name="!회의 시작",
+                value="회의를 시작합니다."
+            ).add_field(
+                name="!회의 종료",
+                value="회의를 종료합니다."
+            ).add_field(
+                name="!회의록",
+                value="이전 회의록을 불러옵니다."
+            ).add_field(
+                name="!관리자 추가 @멘션",
+                value="관리자를 추가합니다."
+            ).add_field(
+                name="!관리자 삭제 @멘션",
+                value="관리자 권한을 박탈합니다."
+            ).add_field(
+                name="!관리자 변경 @멘션 이름",
+                value="관리자의 이름을 변경합니다."
+            ).add_field(
+                name="!관리자 목록",
+                value="관리자 목록을 불러옵니다."
+            ).add_field(
+                name="!오디오변환",
+                value="파일을 같이 보내주시면 mp3 파일을 ogg 파일로 변환해드려요!"
+            )
+        ]))
+        msg: Message = await ctx.send(embed=embeds[0])
+        await Paginator(bot=self.bot, message=msg, embeds=embeds, use_extend=True).start()
 
     @commands.group(name="회의")
     @isGameDeveloper()
